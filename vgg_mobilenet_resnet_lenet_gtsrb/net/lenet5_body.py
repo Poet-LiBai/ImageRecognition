@@ -30,7 +30,7 @@ class LeNet5(Model):
         return x
 
 
-def lenet_model(class_num, act=LeakyReLU(), **kwargs):
+def lenet_model(class_num, act='relu', **kwargs):
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Conv2D(32, (3, 3), input_shape=(32, 32, 3), **kwargs))
     # model.add(tf.keras.layers.BatchNormalization())

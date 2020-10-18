@@ -55,14 +55,14 @@ def plot_bar(x_data):
 
 # 可视化模型训练曲线图#
 def plot_curve(history):
-    accuracy = history.history['accuracy']
-    loss = history.history['loss']
+    accuracy = history['accuracy']
+    loss = history['loss']
 
     plt.figure(figsize=(8, 8))
     plt.subplot(2, 1, 1)
     plt.plot(accuracy, label='Training accuracy')
-    if 'val_accuracy' in history.history:
-        val_accuracy = history.history['val_accuracy']
+    if 'val_accuracy' in history:
+        val_accuracy = history['val_accuracy']
         plt.plot(val_accuracy, label='Validation accuracy')
     plt.legend(loc='lower right')
     plt.ylabel('accuracy')
@@ -71,8 +71,8 @@ def plot_curve(history):
 
     plt.subplot(2, 1, 2)
     plt.plot(loss, label='Training Loss')
-    if 'val_loss' in history.history:
-        val_loss = history.history['val_loss']
+    if 'val_loss' in history:
+        val_loss = history['val_loss']
         plt.plot(val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.ylabel('Cross Entropy')

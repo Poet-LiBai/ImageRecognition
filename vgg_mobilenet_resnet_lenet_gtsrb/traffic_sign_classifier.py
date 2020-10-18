@@ -4,7 +4,7 @@ import time
 import tensorflow as tf
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
-
+from adabelief_tf import AdaBelief
 from label_transform.gtsrb_csv_to_list_path import gtsrb_list_path
 from net.lenet5_body import lenet_model
 # from net.mobilenet_body import mobilenet_model
@@ -15,7 +15,7 @@ from utils.result_visual import signname_csv, predict_visual, plot_curve
 # from tensorflow.keras.activations import
 
 BATCH_SIZE = 128
-
+Optimizer = AdaBelief()
 x_train, y_train, x_valid, y_valid, x_test, y_test = gtsrb_list_path()
 train_ds = TFDataSlices(BATCH_SIZE).train_data(x_train, y_train)
 valid_ds = TFDataSlices(BATCH_SIZE).test_data(x_valid, y_valid)
@@ -38,24 +38,27 @@ test_ds = TFDataSlices(BATCH_SIZE).test_data(x_test, y_test)
 def train_state():
     model = lenet_model(43)
     model.summary()
-    # model.compile(optimizer=Adam(), loss=SparseCategoricalCrossentropy(from_logits=True),
-    #               metrics=['accuracy'])
-    # callback_list = train_callback_list()
-    # train_start = time.time()
-    # train_history = model.fit(train_ds, epochs=50, verbose=1, steps_per_epoch=len(y_train) // BATCH_SIZE,
-    #                           validation_data=valid_ds, callbacks=callback_list, initial_epoch=0)
-    # train_end = time.time()
-    # train_time = train_end - train_start
-    # eval_start = time.time()
-    # eval_history = model.evaluate(test_ds)
-    # eval_end = time.time()
-    # # eval_callback = eval_callbacks_list()
-    # # plot_curve(eval_history)
-    # eval_time = eval_end - eval_start
-    # print('train total time: {:03f} s train per epoch time: {:03f} s'.format(train_time, train_time / 50))
-    # print('evaluate time: {:03f} s'.format(eval_time),
-    #       'eval_loss: {:03f} eval_accuracy: {:03f}'.format(eval_history[0], eval_history[1]))
-    # plot_curve(train_history)
+    model.compile(optimizer=AdaBelief(1e-12),
+                  loss=SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
+    callback_list = train_callback_list()
+    train_start = time.time()
+    train_history = model.fit(train_ds, epochs=8, verbose=1, steps_per_epoch=len(y_train) // BATCH_SIZE,
+                              validation_data=valid_ds, callbacks=callback_list, initial_epoch=0)
+    # model.save('model_h5_save/traffic_sign.h5')
+    train_end = time.time()
+    train_time = train_end - train_start
+    eval_start = time.time()
+
+    eval_history = model.evaluate(test_ds)
+    eval_end = time.time()
+    # eval_callback = eval_callbacks_list()
+    plot_curve(eval_history)
+    eval_time = eval_end - eval_start
+    print('train total time: {:03f} s train per epoch time: {:03f} s'.format(train_time, train_time / 50))
+    print('evaluate time: {:03f} s'.format(eval_time),
+          'eval_loss: {:03f} eval_accuracy: {:03f}'.format(eval_history[0], eval_history[1]))
+    plot_curve(train_history)
 
 
 def predict_eval_state():
@@ -97,4 +100,5 @@ def predict_eval_state():
 # if str(train_or_predict) == 'train' or 'T':
 #     train_state()
 # else:
-predict_eval_state()
+if __name__ == '__main__':
+    train_state()

@@ -21,17 +21,17 @@ def train_callback_list(base_path='F:\\AI-modelsaver\\GTSRB\\LeNet5'):
                                   histogram_freq=1, write_graph=True, write_images=True,
                                   update_freq='epoch')
 
-    csv_log = CSVLogger(os.path.join(log_dir, 'TensorBoard', 'train_log.csv'))
+    # csv_log = CSVLogger(os.path.join(log_dir, 'TensorBoard', 'train_log.csv'))
     # 设置checkpoint仅保存训练权重文件，以val_loss验证损失来监控指标,period=1表示每 1 epoch都保留一次权重文件
 
-    modelcheckpoint_path = os.path.join(log_dir, 'ModelCheckPoint')
-    if not os.path.exists(modelcheckpoint_path):
-        os.makedirs(modelcheckpoint_path)
-    checkpoint = ModelCheckpoint(
-        os.path.join(modelcheckpoint_path,
-                     'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}'
-                     '-acc{accuracy:.3f}-val_acc{val_accuracy:.3f}.ckpt'),
-        monitor='val_loss', save_weights_only=False, save_best_only=True, period=10)
+    # modelcheckpoint_path = os.path.join(log_dir, 'ModelCheckPoint')
+    # if not os.path.exists(modelcheckpoint_path):
+    #     os.makedirs(modelcheckpoint_path)
+    # checkpoint = ModelCheckpoint(
+    #     os.path.join(modelcheckpoint_path,
+    #                  'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}'
+    #                  '-acc{accuracy:.3f}-val_acc{val_accuracy:.3f}.ckpt'),
+    #     monitor='val_loss', save_weights_only=False, save_best_only=True, period=10)
 
     # 当model不在改善时，在等待patience epoch轮后都没有提供，那就按照factor来衰减学习率
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1)
@@ -39,11 +39,11 @@ def train_callback_list(base_path='F:\\AI-modelsaver\\GTSRB\\LeNet5'):
     # 当model的监控指标改变量，小于min_delta时，视为没有改善，所以在等待patience epoch 轮后就停止训练
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=1)
 
-    probar_log = ProgbarLogger()
+    # probar_log = ProgbarLogger()
     callbacks_ = [tensorboard_log,
-                  csv_log,
-                  probar_log,
-                  checkpoint,
+                  # csv_log,
+                  # probar_log,
+                  # checkpoint,
                   reduce_lr,
                   early_stopping
                   ]
