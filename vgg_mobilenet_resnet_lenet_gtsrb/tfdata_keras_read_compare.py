@@ -21,7 +21,7 @@ test_x=np.expand_dims(test_x,-1)
 train_ds = tf.data.Dataset.from_tensor_slices((train_x,train_y))
 test_ds = tf.data.Dataset.from_tensor_slices((test_x,test_y))
 
-train_ds = train_ds.shuffle(buffer_size=1000).batch(256).prefetch(buffer_size=1000).repeat()#训练数据会一直重复读
+train_ds = train_ds.shuffle(buffer_size=1000).batch(256).prefetch(buffer_size=1000).repeat()    # 训练数据会一直重复读
 test_ds = test_ds.batch(256).prefetch(buffer_size=1000)     # 测试数据只读一遍，所以没有加repeat，也可以加repeat(1)
 
 # 检查数据

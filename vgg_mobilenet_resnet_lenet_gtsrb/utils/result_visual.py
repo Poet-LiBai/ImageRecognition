@@ -7,6 +7,7 @@ import pandas as pd
 signname_path = 'F:\\AI-dataset\\GTSRB\\signnames_ch.csv'
 # plt显示中文字体设置
 plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
 
 
 def signname_csv():

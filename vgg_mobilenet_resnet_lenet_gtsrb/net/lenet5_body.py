@@ -47,6 +47,6 @@ def lenet_model(class_num, act='relu', **kwargs):
     model.add(tf.keras.layers.Dropout(0.5))
     model.add(tf.keras.layers.Dense(84, **kwargs))
     model.add(tf.keras.layers.Dropout(0.5))
-    model.add(tf.keras.layers.Dense(class_num))
+    model.add(tf.keras.layers.Dense(class_num, activation='softmax'))
 
     return model

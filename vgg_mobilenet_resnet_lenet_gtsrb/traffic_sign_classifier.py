@@ -1,18 +1,17 @@
 import os
 import time
-
+import argparse
 import tensorflow as tf
+from adabelief_tf import AdaBelief
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
-from adabelief_tf import AdaBelief
+
 from label_transform.gtsrb_csv_to_list_path import gtsrb_list_path
 from net.lenet5_body import lenet_model
 # from net.mobilenet_body import mobilenet_model
 from utils.callbacks import train_callback_list
 from utils.dataset_make import TFDataSlices
 from utils.result_visual import signname_csv, predict_visual, plot_curve
-
-# from tensorflow.keras.activations import
 
 BATCH_SIZE = 128
 Optimizer = AdaBelief()
@@ -21,36 +20,34 @@ train_ds = TFDataSlices(BATCH_SIZE).train_data(x_train, y_train)
 valid_ds = TFDataSlices(BATCH_SIZE).test_data(x_valid, y_valid)
 test_ds = TFDataSlices(BATCH_SIZE).test_data(x_test, y_test)
 
-# data_image_visual(valid_ds)
-# timeit(test_ds)
-# print(train_ds.as_numpy_iterator())
-# METRICS = [
-#     tf.keras.metrics.TruePositives(name='tp'),
-#     tf.keras.metrics.FalsePositives(name='fp'),
-#     tf.keras.metrics.TrueNegatives(name='tn'),
-#     tf.keras.metrics.FalseNegatives(name='fn'),
-#     tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-#     tf.keras.metrics.Precision(name='precision'),
-#     tf.keras.metrics.Recall(name='recall'),
-#     tf.keras.metrics.AUC(name='auc')]
+parse = argparse.ArgumentParser()
+parse.add_argument('--train', action='store_true', help='Choose to train')
+parse.add_argument('--predict', action='store_true', help='Choose to predict')
+parse.add_argument('--model_save', type=str, default='model_h5_save/traffic_sign.h5', help='model save path')
+parse.add_argument('--model_predict', type=str, default='', help='Choose which model to predict')
+cfg_parse = parse.parse_args()
 
 
 def train_state():
     model = lenet_model(43)
     model.summary()
-    model.compile(optimizer=AdaBelief(1e-12),
-                  loss=SparseCategoricalCrossentropy(from_logits=True),
+
+    # from_logits=True时就不用在模型添加sigmoid将输出规范到0~1范围，延后到loss阶段规范0~1
+    # 但是在tflite推理阶段其输出是没有规范到0~1的，若Android Demo时需要显示prob的百分比是不是很合适
+    # 所以在
+    model.compile(optimizer=Adam(),
+                  loss=SparseCategoricalCrossentropy(from_logits=False),
                   metrics=['accuracy'])
     callback_list = train_callback_list()
     train_start = time.time()
-    train_history = model.fit(train_ds, epochs=8, verbose=1, steps_per_epoch=len(y_train) // BATCH_SIZE,
+    train_history = model.fit(train_ds, epochs=100, verbose=1, steps_per_epoch=len(y_train) // BATCH_SIZE,
                               validation_data=valid_ds, callbacks=callback_list, initial_epoch=0)
-    # model.save('model_h5_save/traffic_sign.h5')
+    tf.keras.models.save_model(model, cfg_parse.model_save, include_optimizer=False)
     train_end = time.time()
     train_time = train_end - train_start
     eval_start = time.time()
-
-    eval_history = model.evaluate(test_ds)
+    # return_dict默认是False的，不然用不了history['loss']或history['accuracy']
+    eval_history = model.evaluate(test_ds, return_dict=True)
     eval_end = time.time()
     # eval_callback = eval_callbacks_list()
     plot_curve(eval_history)
@@ -62,23 +59,21 @@ def train_state():
 
 
 def predict_eval_state():
-    model_path = os.path.abspath(
-        'F:\\AI-modelsaver\\GTSRB\\LeNet5\\2020-08-14\\07-50-57\\ModelCheckPoint\\'
-        'ep050-loss0.048-val_loss0.049-acc0.987-val_acc0.992.ckpt')
-    # load_new_ckpt = input('是否重新替换新模型的路径：yes or no ?   ')
-    # if str(load_new_ckpt) == 'yes' or 'y' or 'Y' or 'YES' or 'Yes':
-    #     pass
-    # else:
-    #     print('请在源码中替换路径')
-
+    model_path = os.path.abspath(cfg_parse.model_save)
+    if cfg_parse.model_predict is not None:
+        model_path = os.path.abspath(cfg_parse.model_predict)
     model = tf.keras.models.load_model(model_path)
+
+    # 由于tf.keras.models.save_model时设置include_optimizer=False,所以这里需要重新compile一下
+    # metrics需要添加，不然后面model.fit 和model.evalute 返回的history会没有accuracy
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     model.summary()
 
     eval_start = time.time()
-    eval_history = model.evaluate(test_ds)
+    eval_history = model.evaluate(test_ds, return_dict=True)
     eval_end = time.time()
     # eval_callback = eval_callbacks_list()
-    # plot_curve(eval_history)
+    plot_curve(eval_history)
     eval_time = eval_end - eval_start
     predict_images, true_labels = next(iter(test_ds))
     # predict_outputs = model(training=False).predict(predict_images, batch_size=BATCH_SIZE)
@@ -88,7 +83,7 @@ def predict_eval_state():
     predict_end = time.time()
     predict_time = predict_end - predict_start
     class_name_list = signname_csv()
-    eval_record = 'eval loss:{:.04f} eval accuracy:{:.04f}%'.format(eval_history[0], eval_history[1] * 100) + '\n' \
+    eval_record = 'eval loss:{:.04f} eval accuracy:{:.04f}%'.format(eval_history['loss'], eval_history['accuracy'] * 100) + '\n' \
                   + 'evaluate time:{:.04f}s '.format(eval_time)
     predict_record = 'predict time per batch:{:.04f}s'.format(predict_time)
     # print(eval_record)
@@ -96,9 +91,8 @@ def predict_eval_state():
     predict_visual(predict_images, predict_outputs, true_labels, class_name_list, eval_record, predict_record)
 
 
-# train_or_predict = input('please select train or predict ?')
-# if str(train_or_predict) == 'train' or 'T':
-#     train_state()
-# else:
 if __name__ == '__main__':
-    train_state()
+    if cfg_parse.predict:
+        predict_eval_state()
+    elif cfg_parse.train:
+        train_state()
